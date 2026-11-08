@@ -3,7 +3,11 @@ name: Build LinkCleaner
 on:
   push:
     branches: [main]
+    tags: ['v*']
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -20,3 +24,8 @@ jobs:
         with:
           name: LinkCleaner
           path: LinkCleaner.exe
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: LinkCleaner.exe
