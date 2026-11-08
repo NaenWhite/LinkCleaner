@@ -455,7 +455,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous, LPSTR command, int sh
     mainWindow = CreateWindowExW(0, APP_NAME, APP_NAME, WS_OVERLAPPED, 0, 0, 0, 0, NULL, NULL, instance, NULL);
     if (!mainWindow)
         return 1;
-    iconOn = MakeIcon(0x2ECC71);
+    iconOn = MakeIcon(0x0A0A0A);
     iconOff = MakeIcon(0x808080);
     UpdateTray(NIM_ADD);
     AddClipboardFormatListener(mainWindow);
