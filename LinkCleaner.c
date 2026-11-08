@@ -156,23 +156,39 @@ static BOOL ProcessClipboard(void)
 
 static HICON MakeIcon(DWORD rgb)
 {
+    int size = GetSystemMetrics(SM_CXSMICON);
+    if (size < 16)
+        size = 16;
+    if (size > 64)
+        size = 64;
     BITMAPINFO info = {0};
     info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    info.bmiHeader.biWidth = 16;
-    info.bmiHeader.biHeight = -16;
+    info.bmiHeader.biWidth = size;
+    info.bmiHeader.biHeight = -size;
     info.bmiHeader.biPlanes = 1;
     info.bmiHeader.biBitCount = 32;
     info.bmiHeader.biCompression = BI_RGB;
     DWORD *pixels = NULL;
     HBITMAP color = CreateDIBSection(NULL, &info, DIB_RGB_COLORS, (void **)&pixels, NULL, 0);
-    HBITMAP mask = CreateBitmap(16, 16, 1, 1, NULL);
+    BYTE maskBits[512] = {0};
+    HBITMAP mask = CreateBitmap(size, size, 1, 1, maskBits);
     HICON icon = NULL;
     if (color && mask && pixels) {
-        for (int y = 0; y < 16; y++) {
-            for (int x = 0; x < 16; x++) {
-                int dx = 2 * x - 15;
-                int dy = 2 * y - 15;
-                pixels[y * 16 + x] = (dx * dx + dy * dy <= 225) ? (0xFF000000u | rgb) : 0;
+        int center = size * 4;
+        int radius = center - 4;
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                int covered = 0;
+                for (int sy = 0; sy < 4; sy++) {
+                    for (int sx = 0; sx < 4; sx++) {
+                        int dx = x * 8 + sx * 2 + 1 - center;
+                        int dy = y * 8 + sy * 2 + 1 - center;
+                        if (dx * dx + dy * dy <= radius * radius)
+                            covered++;
+                    }
+                }
+                DWORD alpha = (DWORD)(covered * 255 / 16);
+                pixels[y * size + x] = (alpha << 24) | rgb;
             }
         }
         ICONINFO iconInfo = {TRUE, 0, 0, mask, color};
