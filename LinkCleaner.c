@@ -256,11 +256,14 @@ static const unsigned char glyphAlpha[GLYPH_SIZE * GLYPH_SIZE] = {
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 };
 
-static void RenderIcon(DWORD *pixels, int size, DWORD rgb)
+static void RenderIcon(DWORD *pixels, int size, DWORD rgb, DWORD glyphRgb)
 {
     int red = (int)((rgb >> 16) & 0xFF);
     int green = (int)((rgb >> 8) & 0xFF);
     int blue = (int)(rgb & 0xFF);
+    int glyphRed = (int)((glyphRgb >> 16) & 0xFF);
+    int glyphGreen = (int)((glyphRgb >> 8) & 0xFF);
+    int glyphBlue = (int)(glyphRgb & 0xFF);
     int center = size * 8;
     int radius = center - 8;
     int glyphSpan = size * 16 * GLYPH_PERCENT / 100;
@@ -284,16 +287,16 @@ static void RenderIcon(DWORD *pixels, int size, DWORD rgb)
                 }
             }
             int alpha = circle * 255 / 64;
-            int white = glyph / 64;
-            int r = red + (255 - red) * white / 255;
-            int g = green + (255 - green) * white / 255;
-            int b = blue + (255 - blue) * white / 255;
+            int cover = glyph / 64;
+            int r = red + (glyphRed - red) * cover / 255;
+            int g = green + (glyphGreen - green) * cover / 255;
+            int b = blue + (glyphBlue - blue) * cover / 255;
             pixels[y * size + x] = ((DWORD)alpha << 24) | ((DWORD)r << 16) | ((DWORD)g << 8) | (DWORD)b;
         }
     }
 }
 
-static HICON MakeIcon(DWORD rgb)
+static HICON MakeIcon(DWORD rgb, DWORD glyphRgb)
 {
     int size = GetSystemMetrics(SM_CXSMICON);
     if (size < 16)
@@ -313,7 +316,7 @@ static HICON MakeIcon(DWORD rgb)
     HBITMAP mask = CreateBitmap(size, size, 1, 1, maskBits);
     HICON icon = NULL;
     if (color && mask && pixels) {
-        RenderIcon(pixels, size, rgb);
+        RenderIcon(pixels, size, rgb, glyphRgb);
         ICONINFO iconInfo = {TRUE, 0, 0, mask, color};
         icon = CreateIconIndirect(&iconInfo);
     }
@@ -455,8 +458,8 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous, LPSTR command, int sh
     mainWindow = CreateWindowExW(0, APP_NAME, APP_NAME, WS_OVERLAPPED, 0, 0, 0, 0, NULL, NULL, instance, NULL);
     if (!mainWindow)
         return 1;
-    iconOn = MakeIcon(0x0A0A0A);
-    iconOff = MakeIcon(0x808080);
+    iconOn = MakeIcon(0xFFFFFF, 0x000000);
+    iconOff = MakeIcon(0x808080, 0xFFFFFF);
     UpdateTray(NIM_ADD);
     AddClipboardFormatListener(mainWindow);
     RegisterHotKey(mainWindow, 1, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, 'L');
