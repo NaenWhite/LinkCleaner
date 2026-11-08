@@ -1,1 +1,22 @@
+name: Build LinkCleaner
 
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - name: Compile
+        shell: cmd
+        run: cl /nologo /O1 /Os /GS- /MT /W3 LinkCleaner.c /link /SUBSYSTEM:WINDOWS /OPT:REF /OPT:ICF user32.lib shell32.lib gdi32.lib advapi32.lib
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LinkCleaner
+          path: LinkCleaner.exe
