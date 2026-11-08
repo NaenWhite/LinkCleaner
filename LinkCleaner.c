@@ -214,6 +214,11 @@ static void UpdateTray(DWORD message)
     Shell_NotifyIconW(message, &data);
 }
 
+static void TrimMemory(void)
+{
+    SetProcessWorkingSetSize(GetCurrentProcess(), (SIZE_T)-1, (SIZE_T)-1);
+}
+
 static void Toggle(void)
 {
     enabled = !enabled;
@@ -254,6 +259,7 @@ static void ShowMenu(void)
     TrackPopupMenu(menu, TPM_RIGHTBUTTON | TPM_BOTTOMALIGN, cursor.x, cursor.y, 0, mainWindow, NULL);
     PostMessageW(mainWindow, WM_NULL, 0, 0);
     DestroyMenu(menu);
+    TrimMemory();
 }
 
 static LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
@@ -267,8 +273,10 @@ static LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPA
         return 0;
     case WM_TIMER:
         if (wParam == TIMER_CLIPBOARD) {
-            if (ProcessClipboard() || ++retries >= MAX_RETRIES)
+            if (ProcessClipboard() || ++retries >= MAX_RETRIES) {
                 KillTimer(window, TIMER_CLIPBOARD);
+                TrimMemory();
+            }
         }
         return 0;
     case WM_TRAY:
@@ -329,6 +337,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE previous, LPSTR command, int sh
     UpdateTray(NIM_ADD);
     AddClipboardFormatListener(mainWindow);
     RegisterHotKey(mainWindow, 1, MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, 'L');
+    TrimMemory();
     MSG msg;
     while (GetMessageW(&msg, NULL, 0, 0) > 0) {
         TranslateMessage(&msg);
